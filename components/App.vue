@@ -1,18 +1,9 @@
 <template>
   <div class="section">
-    <ul>
-      <li v-for="data in messages">
-        <span class="tag is-light is-primary is-size-4">{{data.data}}</span>
-      </li>
-    </ul>
-    <div class="field has-addons is-full">
-      <p class="control">
-        <input type="text" class="input" v-model="text">
-      </p>
-      <p class="control">
-        <button class="button" @click="send">Send</button>
-      </p>
-    </div>
+      <canvas tabindex="0" width="600" height="600" ref="canvas"
+              @keydown.left="left"
+              @keydown.right="right"
+      ></canvas>
   </div>
 </template>
 
@@ -23,25 +14,45 @@ export default {
     this.ws = new WebSocket('ws://localhost:8080');
     this.ws.addEventListener('open', this.open);
     this.ws.addEventListener('message', this.message);
+    this.context = this.$refs['canvas'].getContext('2d');
+    setInterval(this.draw, 16);
   },
   data(){
     return {
       ws: null,
       text: '',
-      messages: []
+      messages: [],
+      x: 95,
+      y: 50,
+      context: null
     }
   },
   methods: {
+    left(){
+      this.x-=5;
+      this.send(JSON.stringify({x: this.x, y: this.y}))
+    },
+    right(){
+      this.x+=5;
+      this.send(JSON.stringify({x: this.x, y: this.y}))
+    },
     open(){
-      
+
     },
     message(message){
       console.log(message.data);
-      this.messages.push(message);
+      let data = JSON.parse(message.data);
+      this.x=data.x;
+      this.y=data.y;
     },
-    send(){
-      this.ws.send(this.text);
-      this.text = '';
+    send(data){
+      this.ws.send(data);
+    },
+    draw(){
+      this.context.clearRect(0, 0, 600, 600);
+      this.context.beginPath();
+      this.context.arc(this.x, this.y, 40,0, 2*Math.PI);
+      this.context.stroke();
     }
   }
 }
